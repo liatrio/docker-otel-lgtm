@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-python-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-python-app
+  template:
+    metadata:
+      labels:
+        app: my-python-app
+    spec:
+      containers:
+      - name: my-python-app
+        image: ttl.sh/my-python-app
+        # imagePullPolicy: Always
+        ports:
+        - containerPort: 8082
+        resources:
+          limits:
+            cpu: "0.250"
+            memory: "256Mi"
+          requests:
+            cpu: "0.125"
+            memory: "128Mi"
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8082
+          initialDelaySeconds: 5
+          periodSeconds: 3
+          timeoutSeconds: 2
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 8082
+          initialDelaySeconds: 10
+        env:
+        - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+          value: "true"
+        - name: OTEL_LOGS_EXPORTER
+          value: "otlp"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://lgtm.default.svc.cluster.local:4317"
+        - name: OTEL_METRIC_EXPORT_INTERVAL
+          value: "5000"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=my-python-app,service.version=1.0,deployment.environment=production, service.instance.id=localhost:8082"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: my-python-app
+  name: my-python-app
+  namespace: default
+spec:
+  ports:
+  - name: 80-80
+    port: 80
+    protocol: TCP
+    targetPort: 8082
+  selector:
+    app: my-python-app
+  type: ClusterIP
+---
+# apiVersion: networking.k8s.io/v1beta1 # for k3s < v1.19
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-python-app
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-python-app
+            port:
+              number: 80

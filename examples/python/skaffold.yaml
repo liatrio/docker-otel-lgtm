@@ -1,0 +1,14 @@
+apiVersion: skaffold/v2beta15
+kind: Config
+metadata:
+  name: my-python-app
+build:
+  artifacts:
+  - image: ttl.sh/my-python-app
+    context: .
+    docker:
+      dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+    - manifests.yaml
