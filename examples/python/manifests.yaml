@@ -48,6 +48,10 @@ spec:
           value: "5000"
         - name: OTEL_RESOURCE_ATTRIBUTES
           value: "service.name=my-python-app,service.version=1.0,deployment.environment=production, service.instance.id=localhost:8082"
+        # Disable this environment variable if you want to exclude the health endpoints from auto instrumentation
+        - name: OTEL_PYTHON_EXCLUDED_URLS
+          value: "readiness,liveness"
+
 ---
 apiVersion: v1
 kind: Service
